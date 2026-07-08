@@ -577,6 +577,16 @@ checked."
 
 (defun easy-kill-activate-keymap ()
   (let ((map (easy-kill-map)))
+    ;; Echo a one-line legend so the transient keymap is discoverable.  The
+    ;; target letters are pulled live from `easy-kill-alist' so user-added
+    ;; targets show up too; `?' opens the full `easy-kill-help' listing.
+    (easy-kill-echo
+     "%s: [%s] target · 1-9/+/=/- resize · 0 reset · SPC cycle · @ append · C-w kill · C-SPC region · ? help"
+     (if (easy-kill-get mark) "easy-mark" "easy-kill")
+     (mapconcat #'char-to-string
+                (seq-uniq (seq-filter #'characterp
+                                      (mapcar #'car easy-kill-alist)))
+                " "))
     (set-transient-map
      map
      (lambda ()
