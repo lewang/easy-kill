@@ -331,7 +331,12 @@ candidate property instead."
          (easy-kill-mark-region)
          (easy-kill-indicate-origin))
         (t
-         (easy-kill-interprogram-cut (easy-kill-candidate)))))
+         (easy-kill-interprogram-cut (easy-kill-candidate))))
+  ;; Re-echo the legend so the bracketed selector tracks the current thing.
+  ;; Suppressed during init via `easy-kill-inhibit-message'.  Skipped for
+  ;; string candidates (B/f/F) so their value preview isn't clobbered.
+  (unless (stringp beg)
+    (easy-kill-echo-legend)))
 
 (defun easy-kill-save-candidate ()
   (unless (string= (easy-kill-candidate) "")
@@ -575,18 +580,31 @@ checked."
 (defun easy-kill-exit-p (cmd)
   (and (symbolp cmd) (get cmd 'easy-kill-exit)))
 
+(defun easy-kill-echo-legend ()
+  "Echo a one-line legend for the active easy-kill/easy-mark keymap.
+The current `thing' is named in the header and its selector char is
+bracketed in the target list, so the applied target is always visible.
+Target chars are pulled live from `easy-kill-alist' so user-added
+targets appear too; `?' opens the full `easy-kill-help' listing."
+  (let* ((cur (easy-kill-get thing))
+         (cur-char (car (seq-find (lambda (e) (eq (nth 1 e) cur))
+                                  easy-kill-alist)))
+         (targets (mapconcat
+                   (lambda (c) (if (eql c cur-char)
+                                   (format "[%c]" c)
+                                 (char-to-string c)))
+                   (seq-uniq (seq-filter #'characterp
+                                         (mapcar #'car easy-kill-alist)))
+                   " ")))
+    (easy-kill-echo
+     "%s%s: %s · 1-9/+/=/- resize · 0 reset · SPC cycle · @ append · C-w kill · C-SPC region · ? help"
+     (if (easy-kill-get mark) "easy-mark" "easy-kill")
+     (if cur (format " (%s)" cur) "")
+     targets)))
+
 (defun easy-kill-activate-keymap ()
   (let ((map (easy-kill-map)))
-    ;; Echo a one-line legend so the transient keymap is discoverable.  The
-    ;; target letters are pulled live from `easy-kill-alist' so user-added
-    ;; targets show up too; `?' opens the full `easy-kill-help' listing.
-    (easy-kill-echo
-     "%s: [%s] target · 1-9/+/=/- resize · 0 reset · SPC cycle · @ append · C-w kill · C-SPC region · ? help"
-     (if (easy-kill-get mark) "easy-mark" "easy-kill")
-     (mapconcat #'char-to-string
-                (seq-uniq (seq-filter #'characterp
-                                      (mapcar #'car easy-kill-alist)))
-                " "))
+    (easy-kill-echo-legend)
     (set-transient-map
      map
      (lambda ()
