@@ -332,7 +332,7 @@ candidate property instead."
          (easy-kill-indicate-origin))
         (t
          (easy-kill-interprogram-cut (easy-kill-candidate))))
-  ;; Re-echo the legend so the bracketed selector tracks the current thing.
+  ;; Re-echo the legend so the highlighted selector tracks the current thing.
   ;; Suppressed during init via `easy-kill-inhibit-message'.  Skipped for
   ;; string candidates (B/f/F) so their value preview isn't clobbered.
   (unless (stringp beg)
@@ -583,7 +583,8 @@ checked."
 (defun easy-kill-echo-legend ()
   "Echo a one-line legend for the active easy-kill/easy-mark keymap.
 The current `thing' is named in the header and its selector char is
-bracketed in the target list, so the applied target is always visible.
+highlighted (face `easy-kill-selection') in the target list, so the
+applied target is always visible.
 Target chars are pulled live from `easy-kill-alist' so user-added
 targets appear too; `?' opens the full `easy-kill-help' listing."
   (let* ((cur (easy-kill-get thing))
@@ -591,7 +592,8 @@ targets appear too; `?' opens the full `easy-kill-help' listing."
                                   easy-kill-alist)))
          (targets (mapconcat
                    (lambda (c) (if (eql c cur-char)
-                                   (format "[%c]" c)
+                                   (propertize (char-to-string c)
+                                               'face '(bold easy-kill-selection))
                                  (char-to-string c)))
                    (seq-uniq (seq-filter #'characterp
                                          (mapcar #'car easy-kill-alist)))
